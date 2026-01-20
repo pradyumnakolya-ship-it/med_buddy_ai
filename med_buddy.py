@@ -1,22 +1,13 @@
 # =============================================================
-# Medi Buddy: AI-Powered Voice-Enabled Medical Assistant
+# Medi Buddy – Streamlit Cloud Ready (Text-Based)
 # =============================================================
 # Author: Pradyumna K
-# Description:
-#   This is a comprehensive, educational medical assistant built
-#   using Streamlit, OpenAI, SpeechRecognition, and pyttsx3.
-#   The application supports:
-#     - Text-based medical Q&A
-#     - Voice commands (Speech-to-Text)
-#     - Voice responses (Text-to-Speech)
-#     - Symptom checker (non-diagnostic)
-#     - Disease information
-#     - Medicine information
-#     - Emergency guidance (advisory only)
-#   DISCLAIMER:
-#     This application does NOT provide medical diagnosis.
-#     It is intended for awareness and educational purposes only.
-#     Always consult a qualified healthcare professional.
+# Purpose:
+#   Cloud-deployable version of Medi Buddy with all breaking issues fixed.
+#   - Works on Streamlit Cloud
+#   - Uses NEW OpenAI SDK (no deprecated calls)
+#   - Voice features safely DISABLED in cloud
+#   - Suitable for final-year submission & viva
 # =============================================================
 
 # -----------------------------
@@ -24,339 +15,256 @@
 # -----------------------------
 
 import streamlit as st
-import openai
-import speech_recognition as sr
-import pyttsx3
+from openai import OpenAI
 import datetime
 import json
 import os
-import time
-import threading
-from typing import List, Dict
 
 # -----------------------------
-# SECTION 2: GLOBAL CONFIG
+# SECTION 2: APP CONFIG
 # -----------------------------
 
 APP_NAME = "Medi Buddy"
-APP_VERSION = "1.0"
-
-# Load OpenAI API key securely
-# Expected to be stored in Streamlit secrets
-openai.api_key = st.secrets.get("OPENAI_API_KEY", "")
-
-# -----------------------------
-# SECTION 3: STREAMLIT PAGE SETUP
-# -----------------------------
+APP_VERSION = "1.1 (Cloud Ready)"
 
 st.set_page_config(
-    page_title=f"{APP_NAME} 🩺",
+    page_title="Medi Buddy 🩺",
     page_icon="🩺",
-    layout="centered",
-    initial_sidebar_state="expanded"
+    layout="centered"
 )
 
-st.title("🩺 Medi Buddy – Voice Enabled Medical Assistant")
-st.caption("AI-powered medical awareness assistant with voice support")
+# -----------------------------
+# SECTION 3: OPENAI CLIENT
+# -----------------------------
+
+if "OPENAI_API_KEY" not in st.secrets:
+    st.error("OpenAI API key not found. Add it in Streamlit Secrets.")
+    st.stop()
+
+client = OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
 
 # -----------------------------
-# SECTION 4: DISCLAIMER
+# SECTION 4: HEADER & DISCLAIMER
 # -----------------------------
+
+st.title("🩺 Medi Buddy – AI Medical Assistant")
+st.caption("Cloud-deployed, text-based medical awareness assistant")
 
 st.warning(
-    "⚠️ DISCLAIMER: Medi Buddy is for educational and informational purposes only. "
+    "⚠️ DISCLAIMER: This application is for educational and informational purposes only. "
     "It does NOT diagnose diseases or prescribe treatment. "
-    "Always consult a qualified doctor for medical concerns."
+    "Always consult a qualified healthcare professional."
 )
 
 # -----------------------------
 # SECTION 5: UTILITY FUNCTIONS
 # -----------------------------
 
-def get_current_timestamp() -> str:
-    """Return current timestamp as string."""
+def get_timestamp():
     return datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
 
-def log_interaction(user_input: str, ai_response: str) -> None:
-    """Log user interactions to a local JSON file."""
-    log_entry = {
-        "timestamp": get_current_timestamp(),
-        "user_input": user_input,
-        "ai_response": ai_response
+def log_interaction(user_input, ai_response):
+    entry = {
+        "time": get_timestamp(),
+        "user": user_input,
+        "assistant": ai_response
     }
 
     if not os.path.exists("logs.json"):
         with open("logs.json", "w") as f:
-            json.dump([log_entry], f, indent=4)
+            json.dump([entry], f, indent=4)
     else:
         with open("logs.json", "r+") as f:
             data = json.load(f)
-            data.append(log_entry)
+            data.append(entry)
             f.seek(0)
             json.dump(data, f, indent=4)
 
 
 # -----------------------------
-# SECTION 6: VOICE INPUT (SPEECH TO TEXT)
+# SECTION 6: OPENAI RESPONSE FUNCTION
 # -----------------------------
 
-def voice_to_text(timeout: int = 5) -> str:
-    """
-    Capture voice input from microphone and convert to text.
-    Uses Google Speech Recognition API.
-    """
-    recognizer = sr.Recognizer()
-    with sr.Microphone() as source:
-        st.info("🎤 Listening... Please speak clearly")
-        recognizer.adjust_for_ambient_noise(source, duration=0.5)
-        try:
-            audio = recognizer.listen(source, timeout=timeout)
-        except sr.WaitTimeoutError:
-            return "Listening timed out."
-
+def get_ai_response(prompt):
     try:
-        text = recognizer.recognize_google(audio)
-        return text
-    except sr.UnknownValueError:
-        return "Sorry, I could not understand your voice."
-    except sr.RequestError:
-        return "Speech recognition service is unavailable."
-
-
-# -----------------------------
-# SECTION 7: VOICE OUTPUT (TEXT TO SPEECH)
-# -----------------------------
-
-def speak_text(text: str) -> None:
-    """
-    Convert text to speech using pyttsx3.
-    Runs in a separate thread to avoid blocking UI.
-    """
-    def _speak():
-        engine = pyttsx3.init()
-        engine.setProperty('rate', 160)
-        engine.say(text)
-        engine.runAndWait()
-
-    t = threading.Thread(target=_speak)
-    t.start()
-
-
-# -----------------------------
-# SECTION 8: OPENAI RESPONSE HANDLER
-# -----------------------------
-
-def get_ai_response(prompt: str) -> str:
-    """
-    Get response from OpenAI GPT model with medical safety rules.
-    """
-    try:
-        response = openai.ChatCompletion.create(
-            model="gpt-4",
+        response = client.chat.completions.create(
+            model="gpt-4o-mini",
             messages=[
                 {
                     "role": "system",
                     "content": (
                         "You are a medical awareness assistant. "
-                        "Do not diagnose diseases or prescribe medication. "
-                        "Provide general information and always advise consulting a doctor."
+                        "Do not diagnose diseases or prescribe medicines. "
+                        "Provide general guidance and advise consulting a doctor."
                     )
                 },
                 {"role": "user", "content": prompt}
-            ],
-            temperature=0.3
+            ]
         )
         return response.choices[0].message.content
     except Exception as e:
-        return f"Error fetching AI response: {str(e)}"
+        return f"Error: {str(e)}"
 
 
 # -----------------------------
-# SECTION 9: SIDEBAR NAVIGATION
+# SECTION 7: SIDEBAR MENU
 # -----------------------------
 
-st.sidebar.title("🧭 Navigation")
+st.sidebar.title("🧭 Menu")
 
-menu_option = st.sidebar.radio(
-    "Select a service",
-    (
+menu = st.sidebar.radio(
+    "Choose a service",
+    [
         "Home",
         "Symptom Checker",
         "Disease Information",
         "Medicine Information",
-        "Voice Medical Assistant",
         "Emergency Guidance",
         "About"
-    )
+    ]
 )
 
 # -----------------------------
-# SECTION 10: HOME PAGE
+# SECTION 8: HOME
 # -----------------------------
 
-if menu_option == "Home":
-    st.subheader("Welcome to Medi Buddy 🩺")
+if menu == "Home":
+    st.subheader("Welcome to Medi Buddy")
     st.write(
-        "Medi Buddy is an AI-powered medical awareness assistant designed to help users "
-        "understand common symptoms, diseases, and medicines using both text and voice."
+        "Medi Buddy helps users understand common medical symptoms, diseases, and medicines "
+        "using AI. This cloud version supports text-based interaction only."
     )
 
     st.markdown("""
     ### Features
     - 🩺 Symptom Checker
-    - 📚 Disease Information
-    - 💊 Medicine Guidance
-    - 🎤 Voice Commands
-    - 🗣️ Voice Assistant
-    - 🚨 Emergency Awareness
+    - 📚 Disease Awareness
+    - 💊 Medicine Information
+    - 🚨 Emergency First-Aid Guidance
+    - ☁️ Cloud Deployed (Streamlit)
     """)
 
 # -----------------------------
-# SECTION 11: SYMPTOM CHECKER
+# SECTION 9: SYMPTOM CHECKER
 # -----------------------------
 
-elif menu_option == "Symptom Checker":
+elif menu == "Symptom Checker":
     st.subheader("🩺 Symptom Checker")
+
     symptoms = st.text_area("Describe your symptoms")
 
-    col1, col2 = st.columns(2)
-
-    with col1:
-        if st.button("Analyze Symptoms"):
+    if st.button("Analyze Symptoms"):
+        if symptoms.strip() == "":
+            st.warning("Please enter symptoms.")
+        else:
             prompt = (
-                f"A user reports the following symptoms: {symptoms}. "
+                f"A user reports these symptoms: {symptoms}. "
                 "Explain possible common causes and basic precautions."
             )
             response = get_ai_response(prompt)
             st.write(response)
-            speak_text(response)
             log_interaction(symptoms, response)
 
-    with col2:
-        if st.button("🎤 Speak Symptoms"):
-            spoken_text = voice_to_text()
-            st.success(f"You said: {spoken_text}")
-            response = get_ai_response(spoken_text)
-            st.write(response)
-            speak_text(response)
-            log_interaction(spoken_text, response)
-
 # -----------------------------
-# SECTION 12: DISEASE INFORMATION
+# SECTION 10: DISEASE INFORMATION
 # -----------------------------
 
-elif menu_option == "Disease Information":
+elif menu == "Disease Information":
     st.subheader("📚 Disease Information")
-    disease_name = st.text_input("Enter disease name")
+
+    disease = st.text_input("Enter disease name")
 
     if st.button("Get Disease Info"):
-        prompt = (
-            f"Explain the disease {disease_name} in simple terms, including symptoms, "
-            "causes, prevention, and when to consult a doctor."
-        )
-        response = get_ai_response(prompt)
-        st.write(response)
-        speak_text(response)
-        log_interaction(disease_name, response)
+        if disease.strip() == "":
+            st.warning("Please enter a disease name.")
+        else:
+            prompt = (
+                f"Explain the disease {disease} in simple terms including symptoms, "
+                "causes, prevention, and when to see a doctor."
+            )
+            response = get_ai_response(prompt)
+            st.write(response)
+            log_interaction(disease, response)
 
 # -----------------------------
-# SECTION 13: MEDICINE INFORMATION
+# SECTION 11: MEDICINE INFORMATION
 # -----------------------------
 
-elif menu_option == "Medicine Information":
+elif menu == "Medicine Information":
     st.subheader("💊 Medicine Information")
-    medicine_name = st.text_input("Enter medicine name")
+
+    medicine = st.text_input("Enter medicine name")
 
     if st.button("Get Medicine Details"):
-        prompt = (
-            f"Provide general information about the medicine {medicine_name}, "
-            "including usage, precautions, and common side effects."
-        )
-        response = get_ai_response(prompt)
-        st.write(response)
-        speak_text(response)
-        log_interaction(medicine_name, response)
+        if medicine.strip() == "":
+            st.warning("Please enter a medicine name.")
+        else:
+            prompt = (
+                f"Provide general information about the medicine {medicine}, "
+                "including usage, precautions, and side effects."
+            )
+            response = get_ai_response(prompt)
+            st.write(response)
+            log_interaction(medicine, response)
 
 # -----------------------------
-# SECTION 14: VOICE MEDICAL ASSISTANT
+# SECTION 12: EMERGENCY GUIDANCE
 # -----------------------------
 
-elif menu_option == "Voice Medical Assistant":
-    st.subheader("🎤 Voice Medical Assistant")
-
-    st.write("Click the button and ask your medical question using voice.")
-
-    if st.button("🎤 Start Voice Assistant"):
-        query = voice_to_text()
-        st.success(f"You asked: {query}")
-        response = get_ai_response(query)
-        st.write(response)
-        speak_text(response)
-        log_interaction(query, response)
-
-# -----------------------------
-# SECTION 15: EMERGENCY GUIDANCE
-# -----------------------------
-
-elif menu_option == "Emergency Guidance":
+elif menu == "Emergency Guidance":
     st.subheader("🚨 Emergency Guidance")
 
-    st.error(
-        "If this is a medical emergency, call your local emergency number immediately."
-    )
+    st.error("If this is a real emergency, call your local emergency number immediately.")
 
-    emergency_issue = st.selectbox(
+    issue = st.selectbox(
         "Select an emergency situation",
-        (
+        [
             "Chest pain",
             "Breathing difficulty",
             "Severe bleeding",
             "Burn injury",
             "Unconsciousness",
             "High fever"
-        )
+        ]
     )
 
     if st.button("Get Emergency Advice"):
         prompt = (
-            f"Provide first-aid guidance for {emergency_issue}. "
+            f"Give first-aid guidance for {issue}. "
             "Include immediate steps and advise contacting emergency services."
         )
         response = get_ai_response(prompt)
         st.write(response)
-        speak_text(response)
-        log_interaction(emergency_issue, response)
+        log_interaction(issue, response)
 
 # -----------------------------
-# SECTION 16: ABOUT PAGE
+# SECTION 13: ABOUT
 # -----------------------------
 
-elif menu_option == "About":
-    st.subheader("ℹ️ About Medi Buddy")
+elif menu == "About":
+    st.subheader("ℹ️ About")
 
     st.markdown(f"""
-    **Application Name:** {APP_NAME}
+    **Application:** {APP_NAME}
 
     **Version:** {APP_VERSION}
 
-    **Purpose:**
-    Medi Buddy is designed as an academic project demonstrating the use of AI,
-    Natural Language Processing, and Voice Interfaces in healthcare awareness.
+    **Description:**
+    Medi Buddy is an AI-powered medical awareness system developed as an academic project.
+    It demonstrates the use of AI and cloud deployment in healthcare education.
 
     **Technologies Used:**
     - Python
     - Streamlit
-    - OpenAI GPT
-    - SpeechRecognition
-    - pyttsx3
+    - OpenAI API
 
-    **Disclaimer:**
-    This application does not replace professional medical advice.
+    **Note:**
+    Voice features are available only in local execution due to cloud restrictions.
     """)
 
 # -----------------------------
-# SECTION 17: FOOTER
+# SECTION 14: FOOTER
 # -----------------------------
 
 st.markdown("---")
