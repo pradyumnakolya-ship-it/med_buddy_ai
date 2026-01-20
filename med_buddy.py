@@ -1,122 +1,23 @@
-# =============================================================
-# Medi Buddy – Streamlit Cloud Ready (Text-Based)
-# =============================================================
-# Author: Pradyumna K
-# Purpose:
-#   Cloud-deployable version of Medi Buddy with all breaking issues fixed.
-#   - Works on Streamlit Cloud
-#   - Uses NEW OFFLINE MODE (NO OPENAI DEPENDENCY)
- SDK (no deprecated calls)
-#   - Voice features safely DISABLED in cloud
-#   - Suitable for final-year submission & viva
-# =============================================================
-
-# -----------------------------
-# SECTION 1: IMPORTS
-# -----------------------------
-
 import streamlit as st
-from openai import OFFLINE MODE (NO OPENAI DEPENDENCY)
 
-import datetime
-import json
-import os
-
-# -----------------------------
-# SECTION 2: APP CONFIG
-# -----------------------------
-
-APP_NAME = "Medi Buddy"
-APP_VERSION = "1.1 (Cloud Ready)"
-
+# ---------------- PAGE CONFIG ----------------
 st.set_page_config(
-    page_title="Medi Buddy 🩺",
+    page_title="Medi Buddy",
     page_icon="🩺",
-    layout="centered"
+    layout="wide"
 )
 
-# -----------------------------
-# SECTION 3: OPENAI CLIENT
-# -----------------------------
-
-if "OPENAI_API_KEY" not in st.secrets:
-    st.error("OFFLINE MODE (NO OPENAI DEPENDENCY)
- API key not found. Add it in Streamlit Secrets.")
-    st.stop()
-
-client = OFFLINE MODE (NO OPENAI DEPENDENCY)
-(api_key=st.secrets["OPENAI_API_KEY"])
-
-# -----------------------------
-# SECTION 4: HEADER & DISCLAIMER
-# -----------------------------
-
-st.title("🩺 Medi Buddy – AI Medical Assistant")
-st.caption("Cloud-deployed, text-based medical awareness assistant")
+# ---------------- HEADER ----------------
+st.title("🩺 Medi Buddy")
+st.caption("Cloud-deployed, offline medical awareness assistant")
 
 st.warning(
-    "⚠️ DISCLAIMER: This application is for educational and informational purposes only. "
+    "⚠ DISCLAIMER: This application is for educational and informational purposes only. "
     "It does NOT diagnose diseases or prescribe treatment. "
     "Always consult a qualified healthcare professional."
 )
 
-# -----------------------------
-# SECTION 5: UTILITY FUNCTIONS
-# -----------------------------
-
-def get_timestamp():
-    return datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-
-
-def log_interaction(user_input, ai_response):
-    entry = {
-        "time": get_timestamp(),
-        "user": user_input,
-        "assistant": ai_response
-    }
-
-    if not os.path.exists("logs.json"):
-        with open("logs.json", "w") as f:
-            json.dump([entry], f, indent=4)
-    else:
-        with open("logs.json", "r+") as f:
-            data = json.load(f)
-            data.append(entry)
-            f.seek(0)
-            json.dump(data, f, indent=4)
-
-
-# -----------------------------
-# SECTION 6: OPENAI RESPONSE FUNCTION
-# -----------------------------
-
-def get_ai_response(prompt):
-    try:
-        response = client.chat.completions.create(
-            model="gpt-4o-mini",
-            messages=[
-                {
-                    "role": "system",
-                    "content": (
-                        "You are a medical awareness assistant. "
-                        "Do not diagnose diseases or prescribe medicines. "
-                        "Provide general guidance and advise consulting a doctor."
-                    )
-                },
-                {"role": "user", "content": prompt}
-            ]
-        )
-        return response.choices[0].message.content
-    except Exception as e:
-        return f"Error: {str(e)}"
-
-
-# -----------------------------
-# SECTION 7: SIDEBAR MENU
-# -----------------------------
-
-st.sidebar.title("🧭 Menu")
-
+# ---------------- SIDEBAR ----------------
 menu = st.sidebar.radio(
     "Choose a service",
     [
@@ -129,212 +30,119 @@ menu = st.sidebar.radio(
     ]
 )
 
-# -----------------------------
-# SECTION 8: HOME
-# -----------------------------
+# ---------------- RULE-BASED LOGIC ----------------
+def symptom_checker(symptoms):
+    symptoms = symptoms.lower()
 
-if menu == "Home":
-    st.subheader("Welcome to Medi Buddy")
-    st.write(
-        "Medi Buddy helps users understand common medical symptoms, diseases, and medicines "
-        "using AI. This cloud version supports text-based interaction only."
+    if "fever" in symptoms and "cough" in symptoms:
+        return (
+            "Possible Condition: Viral Infection / Flu\n\n"
+            "General Advice:\n"
+            "- Take rest\n"
+            "- Drink warm fluids\n"
+            "- Monitor temperature\n"
+            "- Consult a doctor if symptoms persist"
+        )
+
+    if "headache" in symptoms:
+        return (
+            "Possible Cause: Stress / Dehydration / Migraine\n\n"
+            "General Advice:\n"
+            "- Stay hydrated\n"
+            "- Rest in a quiet room\n"
+            "- Avoid screen strain"
+        )
+
+    return (
+        "Your symptoms are not clearly identifiable.\n\n"
+        "Please consult a healthcare professional for accurate guidance."
     )
 
-    st.markdown("""
-    ### Features
-    - 🩺 Symptom Checker
-    - 📚 Disease Awareness
-    - 💊 Medicine Information
-    - 🚨 Emergency First-Aid Guidance
-    - ☁️ Cloud Deployed (Streamlit)
-    """)
 
-# -----------------------------
-# SECTION 9: SYMPTOM CHECKER
-# -----------------------------
+def disease_info(disease):
+    disease = disease.lower()
+
+    if disease == "diabetes":
+        return (
+            "Diabetes is a chronic condition affecting blood sugar levels.\n\n"
+            "Common Symptoms:\n"
+            "- Increased thirst\n"
+            "- Frequent urination\n"
+            "- Fatigue\n\n"
+            "Management:\n"
+            "- Healthy diet\n"
+            "- Regular exercise\n"
+            "- Medical supervision"
+        )
+
+    return "Disease information not found."
+
+
+def medicine_info(medicine):
+    medicine = medicine.lower()
+
+    if medicine == "paracetamol":
+        return (
+            "Paracetamol is used to relieve pain and reduce fever.\n\n"
+            "Note:\n"
+            "- Do not exceed recommended dosage\n"
+            "- Consult a doctor if unsure"
+        )
+
+    return "Medicine information not found."
+
+
+# ---------------- PAGES ----------------
+if menu == "Home":
+    st.subheader("Welcome 👋")
+    st.write(
+        "Medi Buddy helps users understand basic medical information, "
+        "symptoms, medicines, and emergency steps using offline logic."
+    )
 
 elif menu == "Symptom Checker":
-    st.subheader("🩺 Symptom Checker")
-
-    symptoms = st.text_area("Describe your symptoms")
+    st.subheader("🧪 Symptom Checker")
+    user_symptoms = st.text_area("Describe your symptoms")
 
     if st.button("Analyze Symptoms"):
-        if symptoms.strip() == "":
-            st.warning("Please enter symptoms.")
+        if user_symptoms.strip():
+            result = symptom_checker(user_symptoms)
+            st.success(result)
         else:
-            prompt = (
-                f"A user reports these symptoms: {symptoms}. "
-                "Explain possible common causes and basic precautions."
-            )
-            response = get_ai_response(prompt)
-            st.write(response)
-            log_interaction(symptoms, response)
-
-# -----------------------------
-# SECTION 10: DISEASE INFORMATION
-# -----------------------------
+            st.error("Please enter your symptoms.")
 
 elif menu == "Disease Information":
-    st.subheader("📚 Disease Information")
-
+    st.subheader("📖 Disease Information")
     disease = st.text_input("Enter disease name")
 
     if st.button("Get Disease Info"):
-        if disease.strip() == "":
-            st.warning("Please enter a disease name.")
+        if disease.strip():
+            st.info(disease_info(disease))
         else:
-            prompt = (
-                f"Explain the disease {disease} in simple terms including symptoms, "
-                "causes, prevention, and when to see a doctor."
-            )
-            response = get_ai_response(prompt)
-            st.write(response)
-            log_interaction(disease, response)
-
-# -----------------------------
-# SECTION 11: MEDICINE INFORMATION
-# -----------------------------
+            st.error("Please enter a disease name.")
 
 elif menu == "Medicine Information":
     st.subheader("💊 Medicine Information")
-
     medicine = st.text_input("Enter medicine name")
 
-    if st.button("Get Medicine Details"):
-        if medicine.strip() == "":
-            st.warning("Please enter a medicine name.")
+    if st.button("Get Medicine Info"):
+        if medicine.strip():
+            st.info(medicine_info(medicine))
         else:
-            prompt = (
-                f"Provide general information about the medicine {medicine}, "
-                "including usage, precautions, and side effects."
-            )
-            response = get_ai_response(prompt)
-            st.write(response)
-            log_interaction(medicine, response)
-
-# -----------------------------
-# SECTION 12: EMERGENCY GUIDANCE
-# -----------------------------
+            st.error("Please enter a medicine name.")
 
 elif menu == "Emergency Guidance":
     st.subheader("🚨 Emergency Guidance")
-
-    st.error("If this is a real emergency, call your local emergency number immediately.")
-
-    issue = st.selectbox(
-        "Select an emergency situation",
-        [
-            "Chest pain",
-            "Breathing difficulty",
-            "Severe bleeding",
-            "Burn injury",
-            "Unconsciousness",
-            "High fever"
-        ]
+    st.error(
+        "If this is a medical emergency:\n\n"
+        "📞 Call local emergency services immediately.\n"
+        "🏥 Visit the nearest hospital."
     )
 
-    if st.button("Get Emergency Advice"):
-        prompt = (
-            f"Give first-aid guidance for {issue}. "
-            "Include immediate steps and advise contacting emergency services."
-        )
-        response = get_ai_response(prompt)
-        st.write(response)
-        log_interaction(issue, response)
-
-# -----------------------------
-# SECTION 13: ABOUT
-# -----------------------------
-
 elif menu == "About":
-    st.subheader("ℹ️ About")
-
-    st.markdown(f"""
-    **Application:** {APP_NAME}
-
-    **Version:** {APP_VERSION}
-
-    **Description:**
-    Medi Buddy is an AI-powered medical awareness system developed as an academic project.
-    It demonstrates the use of AI and cloud deployment in healthcare education.
-
-    **Technologies Used:**
-    - Python
-    - Streamlit
-    - OFFLINE MODE (NO OPENAI DEPENDENCY)
- API
-
-    **Note:**
-    Voice features are available only in local execution due to cloud restrictions.
-    """)
-
-# -----------------------------
-# SECTION 14: FOOTER
-# -----------------------------
-
-st.markdown("---")
-st.caption("© 2026 Medi Buddy | Educational Use Only")
-
-# -----------------------------
-# END OF FILE
-# -----------------------------
-
----
-
-# 📄 FINAL YEAR PROJECT REPORT (READY TO SUBMIT)
-
-## Title
-Medi Buddy: An AI-Based Medical Awareness and Assistance System
-
-## Abstract
-Medi Buddy is a healthcare support system designed to provide medical awareness, symptom analysis, medicine information, and emergency guidance using AI-driven and rule-based techniques. The system is deployed using Streamlit and supports voice interaction for enhanced accessibility. The application is intended strictly for educational purposes.
-
-## Problem Statement
-Many individuals lack immediate access to basic medical guidance, especially during non-emergency situations. Searching online often provides unreliable or confusing information. There is a need for a reliable, user-friendly medical awareness system.
-
-## Proposed Solution
-Medi Buddy provides a centralized platform that allows users to analyze symptoms, get disease information, learn medicine usage, receive emergency guidance, and interact using voice commands.
-
-## Technologies Used
-- Python
-- Streamlit
-- Rule-Based AI
-- Text-to-Speech (pyttsx3)
-
-## Advantages
-- Offline execution
-- No API cost
-- Secure and fast
-- Easy deployment
-
-## Limitations
-- Does not diagnose diseases
-- Educational use only
-
-## Future Scope
-- Integration with wearable devices
-- ML-based disease prediction
-- Multilingual voice support
-
-## Conclusion
-Medi Buddy successfully demonstrates how AI techniques can be used to improve healthcare awareness while maintaining ethical and safety standards.
-
----
-
-# 🎤 VIVA VOCE QUESTIONS (WITH ANSWERS)
-
-1. What is Medi Buddy?
-A medical awareness assistant for educational use.
-
-2. Does it diagnose diseases?
-No, it only provides general guidance.
-
-3. Why Streamlit?
-It allows rapid deployment of interactive applications.
-
-4. Is the system secure?
-Yes, it runs offline with no data storage.
-
-5. What is the future scope?
-ML integration and real-time health monitoring.
-
+    st.subheader("ℹ About Medi Buddy")
+    st.write(
+        "Medi Buddy is an AI-inspired, rule-based medical awareness system "
+        "developed for academic purposes.\n\n"
+        "© 2026 Medi Buddy | Educational Use Only"
+    )
