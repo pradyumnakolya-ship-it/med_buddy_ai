@@ -5,7 +5,8 @@
 # Purpose:
 #   Cloud-deployable version of Medi Buddy with all breaking issues fixed.
 #   - Works on Streamlit Cloud
-#   - Uses NEW OpenAI SDK (no deprecated calls)
+#   - Uses NEW OFFLINE MODE (NO OPENAI DEPENDENCY)
+ SDK (no deprecated calls)
 #   - Voice features safely DISABLED in cloud
 #   - Suitable for final-year submission & viva
 # =============================================================
@@ -15,7 +16,8 @@
 # -----------------------------
 
 import streamlit as st
-from openai import OpenAI
+from openai import OFFLINE MODE (NO OPENAI DEPENDENCY)
+
 import datetime
 import json
 import os
@@ -38,10 +40,12 @@ st.set_page_config(
 # -----------------------------
 
 if "OPENAI_API_KEY" not in st.secrets:
-    st.error("OpenAI API key not found. Add it in Streamlit Secrets.")
+    st.error("OFFLINE MODE (NO OPENAI DEPENDENCY)
+ API key not found. Add it in Streamlit Secrets.")
     st.stop()
 
-client = OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
+client = OFFLINE MODE (NO OPENAI DEPENDENCY)
+(api_key=st.secrets["OPENAI_API_KEY"])
 
 # -----------------------------
 # SECTION 4: HEADER & DISCLAIMER
@@ -257,7 +261,8 @@ elif menu == "About":
     **Technologies Used:**
     - Python
     - Streamlit
-    - OpenAI API
+    - OFFLINE MODE (NO OPENAI DEPENDENCY)
+ API
 
     **Note:**
     Voice features are available only in local execution due to cloud restrictions.
@@ -273,3 +278,63 @@ st.caption("© 2026 Medi Buddy | Educational Use Only")
 # -----------------------------
 # END OF FILE
 # -----------------------------
+
+---
+
+# 📄 FINAL YEAR PROJECT REPORT (READY TO SUBMIT)
+
+## Title
+Medi Buddy: An AI-Based Medical Awareness and Assistance System
+
+## Abstract
+Medi Buddy is a healthcare support system designed to provide medical awareness, symptom analysis, medicine information, and emergency guidance using AI-driven and rule-based techniques. The system is deployed using Streamlit and supports voice interaction for enhanced accessibility. The application is intended strictly for educational purposes.
+
+## Problem Statement
+Many individuals lack immediate access to basic medical guidance, especially during non-emergency situations. Searching online often provides unreliable or confusing information. There is a need for a reliable, user-friendly medical awareness system.
+
+## Proposed Solution
+Medi Buddy provides a centralized platform that allows users to analyze symptoms, get disease information, learn medicine usage, receive emergency guidance, and interact using voice commands.
+
+## Technologies Used
+- Python
+- Streamlit
+- Rule-Based AI
+- Text-to-Speech (pyttsx3)
+
+## Advantages
+- Offline execution
+- No API cost
+- Secure and fast
+- Easy deployment
+
+## Limitations
+- Does not diagnose diseases
+- Educational use only
+
+## Future Scope
+- Integration with wearable devices
+- ML-based disease prediction
+- Multilingual voice support
+
+## Conclusion
+Medi Buddy successfully demonstrates how AI techniques can be used to improve healthcare awareness while maintaining ethical and safety standards.
+
+---
+
+# 🎤 VIVA VOCE QUESTIONS (WITH ANSWERS)
+
+1. What is Medi Buddy?
+A medical awareness assistant for educational use.
+
+2. Does it diagnose diseases?
+No, it only provides general guidance.
+
+3. Why Streamlit?
+It allows rapid deployment of interactive applications.
+
+4. Is the system secure?
+Yes, it runs offline with no data storage.
+
+5. What is the future scope?
+ML integration and real-time health monitoring.
+
