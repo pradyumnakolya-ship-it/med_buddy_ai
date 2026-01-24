@@ -1,10 +1,11 @@
 # model.py
-# Simple ML-style disease prediction logic for Medi Buddy
+# Cloud-safe disease prediction logic for Medi Buddy
 
 def predict_disease(features):
     """
-    features = [fever, cough, headache, fatigue]
-    values are True / False
+    Predict disease based on symptom inputs.
+    features: [fever, cough, headache, fatigue]
+    Each value is True or False
     """
 
     fever, cough, headache, fatigue = features
@@ -12,13 +13,16 @@ def predict_disease(features):
     if fever and cough and fatigue:
         return "Flu"
 
+    if fever and cough:
+        return "Viral Infection"
+
     if headache and not fever:
         return "Migraine"
-
-    if fever and not cough:
-        return "Viral Infection"
 
     if fatigue and headache:
         return "Stress or Weakness"
 
-    return "Healthy / No Major Symptoms"
+    if fever:
+        return "Mild Fever"
+
+    return "No Major Illness Detected"
