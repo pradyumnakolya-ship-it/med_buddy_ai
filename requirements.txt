@@ -1,6 +1,6 @@
-streamlit
-requests
-wikipedia
-numpy
-openai
-sympy
+Streamlit
+Pandas
+NumPy
+Matplotlib
+SpeechRecognition
+pyttsx3
