@@ -6,7 +6,7 @@ import pyttsx3
 import matplotlib.pyplot as plt
 from datetime import datetime
 from model import predict_disease
-
+import os
 # ---------------- CONFIG ----------------
 st.set_page_config("Medi Buddy", "🩺", layout="wide")
 
@@ -135,3 +135,4 @@ elif menu == "About":
     © 2026 Academic Project
     """)
     
+
