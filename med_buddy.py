@@ -1,148 +1,137 @@
 import streamlit as st
+import pandas as pd
+import numpy as np
+import speech_recognition as sr
+import pyttsx3
+import matplotlib.pyplot as plt
+from datetime import datetime
+from model import predict_disease
 
-# ---------------- PAGE CONFIG ----------------
-st.set_page_config(
-    page_title="Medi Buddy",
-    page_icon="🩺",
-    layout="wide"
-)
+# ---------------- CONFIG ----------------
+st.set_page_config("Medi Buddy", "🩺", layout="wide")
 
-# ---------------- HEADER ----------------
-st.title("🩺 Medi Buddy")
-st.caption("Cloud-deployed, offline medical awareness assistant")
+# ---------------- VOICE ----------------
+engine = pyttsx3.init()
+engine.setProperty("rate", 160)
 
-st.warning(
-    "⚠ DISCLAIMER: This application is for educational and informational purposes only. "
-    "It does NOT diagnose diseases or prescribe treatment. "
-    "Always consult a qualified healthcare professional."
-)
+def speak(text):
+    engine.say(text)
+    engine.runAndWait()
+
+def listen():
+    r = sr.Recognizer()
+    with sr.Microphone() as source:
+        st.info("🎤 Listening...")
+        audio = r.listen(source)
+    try:
+        return r.recognize_google(audio)
+    except:
+        return ""
+
+# ---------------- DATA STORAGE ----------------
+FILE = "patient_history.csv"
+
+if not os.path.exists(FILE):
+    pd.DataFrame(columns=["Date", "Symptoms", "Prediction"]).to_csv(FILE, index=False)
+
+def save_history(symptoms, result):
+    df = pd.read_csv(FILE)
+    df.loc[len(df)] = [datetime.now(), symptoms, result]
+    df.to_csv(FILE, index=False)
+
+# ---------------- RULE BASED ----------------
+def rule_based(symptoms):
+    s = symptoms.lower()
+    if "fever" in s and "cough" in s:
+        return "Possible Flu or Viral Infection"
+    if "headache" in s:
+        return "Possible Migraine or Stress"
+    return "Condition unclear"
 
 # ---------------- SIDEBAR ----------------
-menu = st.sidebar.radio(
-    "Choose a service",
-    [
-        "Home",
-        "Symptom Checker",
-        "Disease Information",
-        "Medicine Information",
-        "Emergency Guidance",
-        "About"
-    ]
-)
+menu = st.sidebar.radio("Menu", [
+    "Home",
+    "Symptom Checker",
+    "ML Disease Prediction",
+    "Disease Info",
+    "Medicine Info",
+    "Patient History",
+    "Analytics",
+    "Emergency",
+    "About"
+])
 
-# ---------------- RULE-BASED LOGIC ----------------
-def symptom_checker(symptoms):
-    symptoms = symptoms.lower()
+# ---------------- UI ----------------
+st.title("🩺 Medi Buddy")
+st.warning("Educational use only. Not a medical diagnosis system.")
 
-    if "fever" in symptoms and "cough" in symptoms:
-        return (
-            "Possible Condition: Viral Infection / Flu\n\n"
-            "General Advice:\n"
-            "- Take rest\n"
-            "- Drink warm fluids\n"
-            "- Monitor temperature\n"
-            "- Consult a doctor if symptoms persist"
-        )
-
-    if "headache" in symptoms:
-        return (
-            "Possible Cause: Stress / Dehydration / Migraine\n\n"
-            "General Advice:\n"
-            "- Stay hydrated\n"
-            "- Rest in a quiet room\n"
-            "- Avoid screen strain"
-        )
-
-    return (
-        "Your symptoms are not clearly identifiable.\n\n"
-        "Please consult a healthcare professional for accurate guidance."
-    )
-
-
-def disease_info(disease):
-    disease = disease.lower()
-
-    if disease == "diabetes":
-        return (
-            "Diabetes is a chronic condition affecting blood sugar levels.\n\n"
-            "Common Symptoms:\n"
-            "- Increased thirst\n"
-            "- Frequent urination\n"
-            "- Fatigue\n\n"
-            "Management:\n"
-            "- Healthy diet\n"
-            "- Regular exercise\n"
-            "- Medical supervision"
-        )
-
-    return "Disease information not found."
-
-
-def medicine_info(medicine):
-    medicine = medicine.lower()
-
-    if medicine == "paracetamol":
-        return (
-            "Paracetamol is used to relieve pain and reduce fever.\n\n"
-            "Note:\n"
-            "- Do not exceed recommended dosage\n"
-            "- Consult a doctor if unsure"
-        )
-
-    return "Medicine information not found."
-
-
-# ---------------- PAGES ----------------
+# ---------------- HOME ----------------
 if menu == "Home":
-    st.subheader("Welcome 👋")
-    st.write(
-        "Medi Buddy helps users understand basic medical information, "
-        "symptoms, medicines, and emergency steps using offline logic."
-    )
+    st.write("Offline medical awareness assistant with AI + Voice.")
 
+# ---------------- SYMPTOMS ----------------
 elif menu == "Symptom Checker":
-    st.subheader("🧪 Symptom Checker")
-    user_symptoms = st.text_area("Describe your symptoms")
+    text = st.text_area("Enter symptoms")
+    if st.button("Analyze"):
+        result = rule_based(text)
+        save_history(text, result)
+        st.success(result)
+        speak(result)
 
-    if st.button("Analyze Symptoms"):
-        if user_symptoms.strip():
-            result = symptom_checker(user_symptoms)
+    if st.button("🎤 Speak"):
+        voice = listen()
+        if voice:
+            result = rule_based(voice)
+            save_history(voice, result)
             st.success(result)
-        else:
-            st.error("Please enter your symptoms.")
+            speak(result)
 
-elif menu == "Disease Information":
-    st.subheader("📖 Disease Information")
-    disease = st.text_input("Enter disease name")
+# ---------------- ML PREDICTION ----------------
+elif menu == "ML Disease Prediction":
+    st.subheader("AI Prediction")
+    fever = st.checkbox("Fever")
+    cough = st.checkbox("Cough")
+    headache = st.checkbox("Headache")
+    fatigue = st.checkbox("Fatigue")
 
-    if st.button("Get Disease Info"):
-        if disease.strip():
-            st.info(disease_info(disease))
-        else:
-            st.error("Please enter a disease name.")
+    if st.button("Predict"):
+        features = [fever, cough, headache, fatigue]
+        prediction = predict_disease(features)
+        save_history(str(features), prediction)
+        st.success(f"Predicted Disease: {prediction}")
+        speak(f"Predicted disease is {prediction}")
 
-elif menu == "Medicine Information":
-    st.subheader("💊 Medicine Information")
-    medicine = st.text_input("Enter medicine name")
+# ---------------- INFO ----------------
+elif menu == "Disease Info":
+    st.info("Diabetes, Flu, Migraine supported")
 
-    if st.button("Get Medicine Info"):
-        if medicine.strip():
-            st.info(medicine_info(medicine))
-        else:
-            st.error("Please enter a medicine name.")
+elif menu == "Medicine Info":
+    st.info("Paracetamol, Ibuprofen supported")
 
-elif menu == "Emergency Guidance":
-    st.subheader("🚨 Emergency Guidance")
-    st.error(
-        "If this is a medical emergency:\n\n"
-        "📞 Call local emergency services immediately.\n"
-        "🏥 Visit the nearest hospital."
-    )
+# ---------------- HISTORY ----------------
+elif menu == "Patient History":
+    df = pd.read_csv(FILE)
+    st.dataframe(df)
 
+# ---------------- ANALYTICS ----------------
+elif menu == "Analytics":
+    df = pd.read_csv(FILE)
+    if not df.empty:
+        df["Prediction"].value_counts().plot(kind="bar")
+        st.pyplot(plt)
+
+# ---------------- EMERGENCY ----------------
+elif menu == "Emergency":
+    st.error("🚨 Call emergency services immediately!")
+    speak("Please seek emergency medical help.")
+
+# ---------------- ABOUT ----------------
 elif menu == "About":
-    st.subheader("ℹ About Medi Buddy")
-    st.write(
-        "Medi Buddy is an AI-inspired, rule-based medical awareness system "
-        "developed for academic purposes.\n\n"
-        "© 2026 Medi Buddy | Educational Use Only"
-    )
+    st.write("""
+    Medi Buddy is an offline AI-inspired medical assistant.
+    Includes rule-based logic, ML prediction, voice interaction,
+    analytics, and data storage.
+
+    © 2026 Academic Project
+    """)
+    
